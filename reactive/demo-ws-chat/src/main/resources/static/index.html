@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<script>
+let chatClient = {
+    isOpen: false,
+    ws: {},
+    connect: function() {
+        this.ws = new WebSocket('ws://localhost:8080/ws1/greetings');
+        this.ws.addEventListener('open', () => {
+            console.log(new Date() + ' websocket open event');
+            this.isOpen = true;
+        });
+        this.ws.addEventListener('close', () => {
+            console.log(new Date() + ' websocket close event');
+            this.isOpen = false;
+        });
+        this.ws.addEventListener('message', (message) => {
+            console.log(new Date() + ' websocket message event');
+            console.log(message);
+        });
+    },
+    sendMessage: function(input) {
+        if (this.isOpen) {
+            let text1 = document.getElementById("text1");
+            this.ws.send(text1.value);
+        } else {
+            console.log(new Date() + " websocket hasn't opened yet");
+        }
+    },
+    disconnect: function() {
+        this.isOpen = false;
+        this.ws.onclose = function() {};
+        this.ws.close();
+    }
+}
+
+window.addEventListener('load', (e) => {
+    chatClient.connect();
+});
+
+window.addEventListener("unload", () => {
+    chatClient.disconnect();
+});
+
+</script>
+
+<div>
+    <input type="text" name="text1" id="text1">
+    <button name="button1" id="button1">Send</button>
+</div>
+
+<script>
+document.getElementById("button1").onclick = function(event) {
+    chatClient.sendMessage("Hello");
+}
+
+</script>
+</body>
+</html>

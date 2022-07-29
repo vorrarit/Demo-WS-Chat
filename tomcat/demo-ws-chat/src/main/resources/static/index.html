@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<script>
+let chatClient = {
+    isOpen: false,
+    ws: {},
+    connect: function() {
+        this.ws = new WebSocket('wss://backend.local/ws/greetings?suffix=vorrarit');
+        this.ws.addEventListener('open', () => {
+            console.log(new Date() + ' websocket open event');
+            this.isOpen = true;
+        });
+        this.ws.addEventListener('close', () => {
+            console.log(new Date() + ' websocket close event');
+            this.isOpen = false;
+        });
+        this.ws.addEventListener('message', (message) => {
+            console.log(new Date() + ' websocket message event');
+            console.log(message);
+            let content = document.getElementById("content");
+            content.innerHTML += message.data + "<br>";
+        });
+    },
+    sendMessage: function(input) {
+        if (this.isOpen) {
+            this.ws.send(input);
+        } else {
+            console.log(new Date() + " websocket hasn't opened yet");
+        }
+    },
+    disconnect: function() {
+        this.isOpen = false;
+        this.ws.onclose = function() {};
+        this.ws.close();
+    }
+}
+
+window.addEventListener('load', (e) => {
+    chatClient.connect();
+});
+
+window.addEventListener("unload", () => {
+    chatClient.disconnect();
+});
+
+</script>
+
+<div>
+    <input type="text" name="text1" id="text1">
+    <button name="button1" id="button1">Send</button>
+</div>
+<div id="content"></div>
+
+<script>
+document.getElementById("button1").onclick = function(event) {
+    let text1 = document.getElementById("text1");
+    chatClient.sendMessage(text1.value);
+}
+
+</script>
+</body>
+</html>

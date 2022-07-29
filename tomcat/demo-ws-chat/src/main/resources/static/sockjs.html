@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+</head>
+<body>
+<script>
+let chatClient = {
+    isOpen: false,
+    sock: {},
+    connect: function() {
+        //this.sock = new SockJS('http://localhost:8080/sockjs/greetings?suffix=vorrarit', null, { transports: 'xhr-polling' });
+        this.sock = new SockJS('https://backend.local/sockjs/greetings?suffix=vorrarit', null, { transports: 'xhr-polling' });
+        this.sock.onopen = () => {
+            console.log(new Date() + ' sockjs open event');
+            this.isOpen = true;
+        };
+        this.sock.onclose = () => {
+            console.log(new Date() + ' sockjs close event');
+            this.isOpen = false;
+        };
+        this.sock.onmessage = (message) => {
+            console.log(new Date() + ' sockjs message event');
+            console.log(message);
+            let content = document.getElementById("content");
+            content.innerHTML += message.data + "<br>";
+        };
+    },
+    sendMessage: function(input) {
+        if (this.isOpen) {
+            let text1 = document.getElementById("text1");
+            this.sock.send(text1.value);
+        } else {
+            console.log(new Date() + " websocket hasn't opened yet");
+        }
+    },
+    disconnect: function() {
+        this.isOpen = false;
+        this.sockjs.onclose = function() {};
+        this.sockjs.close();
+    }
+}
+
+window.addEventListener('load', (e) => {
+    chatClient.connect();
+});
+
+window.addEventListener("unload", () => {
+    chatClient.disconnect();
+});
+
+</script>
+
+<div>
+  <input type="text" name="text1" id="text1">
+  <button name="button1" id="button1">Send</button>
+</div>
+<div id="content"></div>
+
+<script>
+document.getElementById("button1").onclick = function(event) {
+    chatClient.sendMessage("Hello");
+}
+
+</script>
+</body>
+</html>
+

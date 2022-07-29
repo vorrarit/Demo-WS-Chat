@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/webstomp-client@1.2.6/dist/webstomp.min.js"></script>
+</head>
+<body>
+<script>
+let chatClient = {
+    isOpen: false,
+    sock: {},
+    stompClient: {},
+    connect: function(username) {
+        this.sock = new SockJS('https://backend.local/stomp/connect');
+        this.sock.onopen = () => {
+            console.log(new Date() + ' sockjs open event');
+            this.isOpen = true;
+        };
+        this.sock.onclose = () => {
+            console.log(new Date() + ' sockjs close event');
+            this.isOpen = false;
+        };
+        this.sock.onmessage = (message) => {
+            console.log(new Date() + ' sockjs message event');
+            console.log(message);
+            let content = document.getElementById("content");
+            content.innerHTML += message.data + "<br>";
+        };
+
+        this.stompClient = webstomp.over(this.sock);
+        this.stompClient.connect({ username: username },
+          () => {
+            console.log(new Date() + ' websocket open event');
+
+            this.stompClient.subscribe('/topic/stomp/greetings', function (response) {
+              console.log("## from /topic/stomp/greetings ##", response);
+            });
+
+            /*
+            this.stompClient.subscribe('/topic/stomp/periodic', function (response) {
+              console.log("## from /topic/stomp/periodic ##", response);
+              let content = document.getElementById("content");
+              content.innerHTML += response.body + "<br>";
+            });
+            */
+
+            this.stompClient.subscribe('/user/queue/message', function (response) {
+              console.log("## from /user/queue/message ##", response);
+              let content = document.getElementById("content");
+              content.innerHTML += response.body + "<br>";
+            });
+
+            this.isOpen = true;
+          },
+          (err) => {
+            console.log(new Date(), err);
+          }
+        );
+    },
+    sendMessage: function(input) {
+        if (this.isOpen) {
+            this.stompClient.send("/app/stomp/greetings", input);
+        } else {
+            console.log(new Date() + " websocket hasn't opened yet");
+        }
+    },
+    disconnect: function() {
+        this.isOpen = false;
+        //this.sock.onclose = function() {};
+        //this.sock.close();
+        this.stompClient.disconnect();
+    }
+}
+
+window.addEventListener('load', (e) => {
+});
+
+window.addEventListener("unload", () => {
+    //chatClient.disconnect();
+});
+
+
+</script>
+<div>
+  <input type="text" name="txtUsername" id="txtUsername">
+  <button name="btnConnect" id="btnConnect">Connect</button>
+  <button name="btnDisconnect" id="btnDisconnect">Disconnect</button>
+</div>
+<div>
+  <input type="text" name="text1" id="text1">
+  <button name="btnSend" id="btnSend">Send</button>
+</div>
+<div id="content"></div>
+
+<script>
+let btnConnect = document.getElementById("btnConnect");
+let btnDisconnect = document.getElementById("btnDisconnect");
+let txtUsername = document.getElementById("txtUsername");
+let btnSend = document.getElementById("btnSend");
+let text1 = document.getElementById("text1");
+
+btnConnect.onclick = function(event) {
+  chatClient.connect(txtUsername.value);
+}
+
+btnDisconnect.onclick = function(event) {
+  chatClient.disconnect();
+}
+
+btnSend.onclick = function(event) {
+  chatClient.sendMessage(text1.value);
+}
+
+</script>
+</body>
+</html>
+
